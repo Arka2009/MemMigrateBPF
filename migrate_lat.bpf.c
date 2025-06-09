@@ -34,9 +34,17 @@ static __always_inline struct start_key make_key(void)
 }
 
 /* ---------- kprobe entry: remember T0 ---------- */
-SEC("kprobe/migrate_pages")
-int BPF_KPROBE(handle_migrate_pages_entry)
-{
+// SEC("kprobe/migrate_pages")
+// int BPF_KPROBE(handle_migrate_pages_entry)
+// {
+//         struct start_key k   = make_key();
+//         u64 ts               = bpf_ktime_get_ns();
+//         bpf_map_update_elem(&starts, &k, &ts, BPF_ANY);
+//         return 0;
+// }
+
+SEC("tp/migrate/mm_migrate_pages_start")
+int handle_mm_migrate_pages_start(struct trace_event_raw_mm_migrate_pages_start *ctx) {
         struct start_key k   = make_key();
         u64 ts               = bpf_ktime_get_ns();
         bpf_map_update_elem(&starts, &k, &ts, BPF_ANY);
@@ -44,7 +52,45 @@ int BPF_KPROBE(handle_migrate_pages_entry)
 }
 
 /* ---------- trace-point after migration returns: compute Δt ---- */
-SEC("tp/mm/mm_migrate_pages")
+
+// SEC("kretprobe/migrate_pages")
+// int BPF_KRETPROBE(handle_migrate_pages_exit, int ret)
+// {
+//         struct start_key k = make_key();
+//         u64 *tsp = bpf_map_lookup_elem(&starts, &k);
+//         if (!tsp)
+//                 return 0;
+
+//         u64 delta = bpf_ktime_get_ns() - *tsp;
+//         bpf_map_delete_elem(&starts, &k);
+
+//         struct lat_event *e = bpf_ringbuf_reserve(&events, sizeof(*e), 0);
+//         if (!e)
+//                 return 0;
+
+//         e->pid = k.pid;
+//         e->delta_ns = delta;
+        
+//         // Note: We can't get the exact succeeded/failed pages count from kretprobe
+//         // ret value is negative on error, or number of pages migrated on success
+//         if (ret < 0) {
+//             e->pages_ok = 0;
+//             e->pages_failed = 1;  // indicating error
+//         } else {
+//             e->pages_ok = ret;    // number of pages migrated
+//             e->pages_failed = 0;
+//         }
+        
+//         // These values aren't available via kretprobe
+//         e->mode = 0;
+//         e->reason = 0;
+        
+//         bpf_get_current_comm(&e->comm, sizeof(e->comm));
+//         bpf_ringbuf_submit(e, 0);
+//         return 0;
+// }
+
+SEC("tp/migrate/mm_migrate_pages")
 int handle_mm_migrate_pages(struct trace_event_raw_mm_migrate_pages *ctx)
 {
         struct start_key k   = make_key();
