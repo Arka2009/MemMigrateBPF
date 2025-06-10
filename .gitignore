@@ -120,3 +120,7 @@ log/
 config-*
 bpftool/
 log.txt
+
+# Execs
+memrdwr
+migrate_lat_user

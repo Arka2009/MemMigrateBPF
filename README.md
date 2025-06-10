@@ -26,12 +26,36 @@ migrate:mm_migrate_pages_start
 migrate:mm_migrate_pages
 syscalls:sys_exit_migrate_pages
 syscalls:sys_enter_migrate_pages
+```
+Use the `cat /sys/kernel/tracing/events/migrate/mm_migrate_pages/format`, to check the ctx attrs associated with the tracepoint.
 
-
-
-
-cat /sys/kernel/tracing/events/migrate/mm_migrate_pages/format
-
+Some of the ctx datastructure are defined below
+```
 trace_event_raw_mm_migrate_pages
 trace_event_raw_mm_migrate_pages_start
+```
+
+## Running sample application and the collector
+```bash
+gcc memrdwr.c -o memrdwr
+./memrdwr # Note the pid after the display
+
+
+```
+
+
+## NUMA command
+```bash
+
+export pid=104579
+
+# Check process NUMA stats
+numastat -p $pid
+
+# Migrate pages
+migratepages $pid 1 0
+migratepages $pid 0 1
+
+
+sudo ./migrate_lat_user -p $(migratepages $pid 1 0)
 ```
